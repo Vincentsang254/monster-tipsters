@@ -5,8 +5,8 @@ const transporter = nodemailer.createTransport({
   port: 587, // Use 465 for SSL or 587 for TLS
   secure: false,
   auth: {
-    user: "816128001@smtp-brevo.com",
-    pass: "gY2aRCZIwzd4Q6kB",
+    user: "816128003@smtp-brevo.com",
+    pass: "f7CNjxmBInyRJPaZ",
   },
 });
 

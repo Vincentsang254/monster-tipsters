@@ -22,9 +22,8 @@ const sendVerificationEmail = async (email, verificationCode) => {
     console.log("Verification email sent ✅", info.messageId);
 
   } catch (error) {
-     console.error("Error sending verification email ❌:", error);
-    throw error; // let controller handle it
-    // throw new Error(`Error sending verification email: ${error}`);
+    
+    throw new Error(`Error sending verification email: ${error}`);
   }
 };
 
