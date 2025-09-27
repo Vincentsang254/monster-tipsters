@@ -3,6 +3,7 @@ const {  VERIFICATION_EMAIL_TEMPLATE,
   PASSWORD_RESET_REQUEST_TEMPLATE,
   WELCOME_EMAIL_TEMPLATE,
   PASSWORD_RESET_SUCCESS_TEMPLATE } = require("./emailTemplates");
+
 const sendVerificationEmail = async (email, verificationCode) => {
   const recipient = email;
   try {
@@ -18,16 +19,17 @@ const sendVerificationEmail = async (email, verificationCode) => {
       html: emailContent,
     });
 
+    console.log("Verification email sent ✅", info.messageId);
+
   } catch (error) {
-    throw new Error(`Error sending verification email: ${error}`);
+     console.error("Error sending verification email ❌:", error);
+    throw error; // let controller handle it
+    // throw new Error(`Error sending verification email: ${error}`);
   }
 };
 
 const sendWelcomeEmail = async (email, name) => {
   const recipient = email;
-
-  // Manually inject variables into the template if you're not using a templating engine
-  // const welcomeContent = `<p>Welcome, ${name}!</p><p>We're glad to have you with us.</p>`;
   const welcomeContent = WELCOME_EMAIL_TEMPLATE.replace("{name}", name);
   try {
     const response = await transporter.sendMail({
