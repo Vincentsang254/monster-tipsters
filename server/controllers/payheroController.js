@@ -6,18 +6,20 @@ const cron = require("node-cron");
 const { Op } = require("sequelize");
 
 // Credentials for Payhero API
-const apiUsername = process.env.PAYHERO_API_USERNAME || "LykioY8LI38TwLWSEOpX";
+//  "LykioY8LI38TwLWSEOpX"
+// "blP4TJA0O8yVtyH4G7U7AzpwktnTJOx31THnoPzM"
+const apiUsername = process.env.PAYHERO_API_USERNAME || "VpEsJklpEsfBJALIhZTX";
 const apiPassword =
   process.env.PAYHERO_API_PASSWORD ||
-  "blP4TJA0O8yVtyH4G7U7AzpwktnTJOx31THnoPzM";
+   "XzVWzanrjygz5anOeTx8iQkiShIuTVkKd5atIbRx";
 const encodedCredentials = Buffer.from(
   `${apiUsername}:${apiPassword}`
 ).toString("base64");
 
 const PAYMENT_TIERS = {
-  499: 3,
-  1499: 7,
-  2499: 30,
+  1: 3,//499
+  2: 7,//1499
+  3: 30,//2499
 };
 
 // ✅ Cron job: Reset expired VIP users to 'client'
@@ -60,7 +62,7 @@ const initiatePayheroSTKPush = async (req, res) => {
       {
         amount: parseInt(amount),
         phone_number: formattedPhone,
-        channel_id: 2409,
+        channel_id: 3641,
         provider: "m-pesa",
         external_reference: `INV-${id}`,
         callback_url:

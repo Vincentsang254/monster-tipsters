@@ -172,9 +172,9 @@ const PLANS = [
     title: "Bronze Plan", 
     description: "Perfect for trying out our VIP service", 
     duration: "3 days access", 
-    price: "Ksh 499", 
+    price: "Ksh 1", //499
     features: ["5-7 tips per day", "Basic analysis", "Email support"],
-    planId: 499, 
+    planId: 1, 
     buttonColor: "bg-amber-600 hover:bg-amber-700",
     popular: false
   },
@@ -184,9 +184,9 @@ const PLANS = [
     title: "Silver Plan", 
     description: "Our most popular choice", 
     duration: "7 days access", 
-    price: "Ksh 1499",  
+    price: "Ksh 2",  
     features: ["7-10 tips per day", "Detailed analysis", "Priority support"],
-    planId: 1499, 
+    planId: 2, //1499
     buttonColor: "bg-gray-600 hover:bg-gray-700",
     popular: true
   },
@@ -194,9 +194,9 @@ const PLANS = [
     title: "Gold Plan", 
     description: "For serious bettors", 
     duration: "30 days access", 
-    price: "Ksh 2499",  
+    price: "Ksh 3",  
     features: ["10-15 tips per day", "Premium analysis", "24/7 support", "Personal tips on request"],
-    planId: 2499, 
+    planId: 3, //2499
     buttonColor: "bg-yellow-600 hover:bg-yellow-700",
     popular: false
   },
