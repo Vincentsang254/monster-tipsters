@@ -172,7 +172,7 @@ const PLANS = [
     title: "Bronze Plan", 
     description: "Perfect for trying out our VIP service", 
     duration: "3 days access", 
-    price: "KES 1", 
+    price: "Ksh 1",   // ✅ matches backend amount 1
     features: ["5-7 tips per day", "Basic analysis", "Email support"],
     planId: 1, 
     buttonColor: "bg-amber-600 hover:bg-amber-700",
@@ -182,7 +182,7 @@ const PLANS = [
     title: "Silver Plan", 
     description: "Our most popular choice", 
     duration: "7 days access", 
-    price: "KES 2", 
+    price: "Ksh 2",   // ✅ matches backend amount 2
     features: ["7-10 tips per day", "Detailed analysis", "Priority support"],
     planId: 2, 
     buttonColor: "bg-gray-600 hover:bg-gray-700",
@@ -192,13 +192,14 @@ const PLANS = [
     title: "Gold Plan", 
     description: "For serious bettors", 
     duration: "30 days access", 
-    price: "KES 3", 
+    price: "Ksh 3",   // ✅ matches backend amount 3
     features: ["10-15 tips per day", "Premium analysis", "24/7 support", "Personal tips on request"],
     planId: 3, 
     buttonColor: "bg-yellow-600 hover:bg-yellow-700",
     popular: false
   },
 ];
+
 
 const PlanCard = ({ title, description, duration, price, features, planId, buttonColor, popular, handleNavigate }) => (
   <div className={`relative h-full p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition-all ${popular ? "ring-2 ring-blue-500" : ""}`}>
