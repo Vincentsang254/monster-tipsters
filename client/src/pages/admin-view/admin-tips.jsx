@@ -34,7 +34,9 @@ const AdminTips = () => {
   const dispatch = useDispatch();
   const status = useSelector((state) => state.tips.status);
   const error = useSelector((state) => state.tips.error);
-  const tips = useSelector((state) => state.tips.list) || [];
+  const tips = useSelector((state) => state.tips.list);
+
+  console.log("tips from admin page", tips);
 
   const [selectedTip, setSelectedTip] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -131,9 +133,9 @@ const AdminTips = () => {
   };
 
   const filteredTips = tips.filter(tip => {
-    const matchesSearch = tip.match.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         tip.league.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tip.prediction.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = tip?.match?.toLowerCase().includes(searchTerm?.toLowerCase()) || 
+                         tip?.league?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+                         tip?.prediction?.toLowerCase().includes(searchTerm?.toLowerCase());
     
     const matchesFilter = filterType === "all" || tip.tipsType === filterType;
     
