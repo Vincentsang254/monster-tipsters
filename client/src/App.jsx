@@ -37,8 +37,19 @@ import UserJackpots from "./pages/user-view/jackpots/user-jackpots";
 import UnauthPage from "./pages/unauth-page";
 import NotFound from "./pages/not-found/Notfound";
 import AdminPaymentsHistory from "./pages/admin-view/admin-view-payments";
+import { loadUser } from "./features/slices/authSlice";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 
 const App = ({ isAuthenticated, user }) => {
+
+  const dispatch = useDispatch();
+ 
+
+  // Load user on app initialization
+  useEffect(() => {
+    dispatch(loadUser());
+  }, [dispatch]);
   return (
     <div className="flex flex-col min-h-screen overflow-hidden bg-white">
       <ToastContainer
