@@ -15,9 +15,9 @@ const encodedCredentials = Buffer.from(
 ).toString("base64");
 
 const PAYMENT_TIERS = {
-  1: 3,
-  2: 7,
-  3: 30,
+  499: 3,
+  1499: 7,
+  2499: 30,
 };
 
 // ✅ Cron job: Reset expired VIP users to 'client'
@@ -125,6 +125,12 @@ const handleCallback = async (req, res) => {
       ExternalReference: reference,
     } = items;
 const userId = reference.split("-")[1];
+if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reference, user ID missing.",
+      });
+    }
   
     const user = await Users.findOne({ where: { id: userId } });
 
