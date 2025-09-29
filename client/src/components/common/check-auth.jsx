@@ -9,54 +9,29 @@ import Loader from "./Loader";
 const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
   const location = useLocation();
   const dispatch = useDispatch();
-  const { 
-    userType, 
-    status,
-    isAuthenticated 
-  } = useSelector((state) => state.auth);
-  
-  const [isChecking, setIsChecking] = useState(true);
+  const userType = useSelector((state) => state.auth.userType);
+  const isAuthenticated = useSelector((state) => Boolean(state.auth.token));
+  const [checkingToken, setCheckingToken] = useState(true);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      const tokenFromStorage = localStorage.getItem("token");
-      
-      // If no token, we're done checking
-      if (!tokenFromStorage) {
-        setIsChecking(false);
-        return;
-      }
-
+    const tokenFromStorage = localStorage.getItem("token");
+    if (tokenFromStorage) {
       try {
-        // Validate token
-        const decodedToken = jwtDecode(tokenFromStorage);
-        
-        // Check token expiration
-        if (decodedToken.exp * 1000 < Date.now()) {
+        const user = jwtDecode(tokenFromStorage);
+        if (user.exp * 1000 < Date.now()) {
           dispatch(logoutUser());
-          setIsChecking(false);
-          return;
+        } else {
+          dispatch(loadUser(user));
         }
-
-        // If we have a valid token, load user data if not already loaded
-        if (status === 'idle' || status === 'pending') {
-          await dispatch(loadUser());
-        }
-        
       } catch (error) {
-        console.error("Token validation failed:", error);
+        console.error("Token decoding failed:", error);
         dispatch(logoutUser());
-      } finally {
-        // Always stop checking after processing
-        setIsChecking(false);
       }
-    };
+    }
+    setCheckingToken(false);
+  }, [dispatch]);
 
-    initializeAuth();
-  }, [dispatch, status]);
-
-  // Show loader while initializing authentication
-  if (isChecking) {
+  if (checkingToken) {
     return <Loader />;
   }
 
@@ -85,8 +60,9 @@ const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
 
   // 2. If user is authenticated and tries to access public path, redirect to dashboard
   if (isAuthenticated && isPublicPath) {
-    const redirectPath = userType === "admin" ? "/admin/dashboard" : "/user/dashboard";
-    return <Navigate to={redirectPath} replace />;
+    return userType === "admin" ? 
+      <Navigate to="/admin/dashboard" replace /> : 
+      <Navigate to="/user/dashboard" replace />;
   }
 
   // 3. If auth is required but user isn't authenticated, redirect to login
@@ -102,8 +78,9 @@ const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
   // 5. Handle root path redirect
   if (location.pathname === "/") {
     if (isAuthenticated) {
-      const redirectPath = userType === "admin" ? "/admin/dashboard" : "/user/dashboard";
-      return <Navigate to={redirectPath} replace />;
+      return userType === "admin" ? 
+        <Navigate to="/admin/dashboard" replace /> : 
+        <Navigate to="/user/dashboard" replace />;
     }
     return <Navigate to="/auth/login" replace />;
   }
