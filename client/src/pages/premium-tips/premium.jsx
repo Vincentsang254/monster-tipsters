@@ -8,7 +8,7 @@ import { fetchCodes } from "@/features/slices/codeSlice";
 
 const Premium = () => {
   const dispatch = useDispatch();
-  const { codes, loading, error } = useSelector((state) => state.codes);
+  const { list: codes, status, error } = useSelector((state) => state.codes);
 
   useEffect(() => {
     dispatch(fetchCodes());
@@ -27,7 +27,7 @@ const Premium = () => {
         </h1>
 
         {/* Loading state */}
-        {loading ? (
+        {status === "pending" ? (
           <div className="text-center py-20 text-gray-600 dark:text-gray-300">
             Loading codes...
           </div>
