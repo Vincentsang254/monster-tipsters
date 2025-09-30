@@ -59,31 +59,27 @@ const getCodeById = async (req, res) => {
 // Update a code by ID
 const updateCode = async (req, res) => {
   const codeId = req.params.codeId;
-  const {  code, results, codeType } = req.body;
+  const { code, results, codeType } = req.body;
+
   try {
-    const codeUpdated = await Codes.findByPk(codeId);
-    if (!codeUpdated) {
-      return res.status(404).json({ success: false,message: "Code not found" });
+    const codeRecord = await Codes.findByPk(codeId);
+    if (!codeRecord) {
+      return res.status(404).json({ success: false, message: "Code not found" });
     }
 
-    const res = await Codes.update(
-      {  code, results, codeType },
-      {
-        where: { id: codeId },
-      }
-    );
+    // Update the record
+    await codeRecord.update({ code, results, codeType });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Code updated successfully",
-        data: res
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Code updated successfully",
+      data: codeRecord,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const deleteCode = async (req, res) => {
   const codeId = req.params.codeId;
