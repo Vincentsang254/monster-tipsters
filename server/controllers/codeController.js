@@ -4,20 +4,31 @@ const createCode = async (req, res) => {
   try {
     const { code, results, codeType } = req.body;
 
-    if(!code || !results || !codeType){
-      return res.status(403).json({success: false, message: "missing required fields."})
+    if (!code || !results || !codeType) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Missing required fields." });
     }
-     const res = await Codes.create({
-       code, results, codeType
+
+    const newCode = await Codes.create({
+      code,
+      results,
+      codeType,
     });
 
-    res
-      .status(201)
-      .json({ success: true, message: "Code created successfully" , data: res});
+    return res.status(201).json({
+      success: true,
+      message: "Code created successfully",
+      data: newCode,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
 
 // Get all codes
 const getCode = async (req, res) => {
