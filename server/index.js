@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const tipsRoutes = require ("./routes/tipsRoutes");
 const jackpotRoutes = require ("./routes/jackpotRoutes");
+const codeRoutes = require ("./routes/codeRoutes");
 const paymentRoutes = require ("./routes/paymentRoutes");
 const imageRoutes = require ("./routes/imageRoutes");
 
@@ -33,6 +34,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tips", tipsRoutes);
 app.use("/api/jackpots", jackpotRoutes);
+app.use("/api/codes", codeRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/images", imageRoutes);
 
