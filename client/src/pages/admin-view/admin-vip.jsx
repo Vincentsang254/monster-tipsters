@@ -47,6 +47,7 @@ import {
   deleteCode,
   fetchCodes,
   updateCode,
+  createCode
 } from "@/features/slices/codeSlice";
 
 const AdminVip = () => {
@@ -136,35 +137,39 @@ const AdminVip = () => {
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
-  const handleSave = async () => {
-    if (!formData.code || !formData.codeType || !formData.results) {
-      toast.error("Please fill all required fields", { position: "top-center" });
-      return;
-    }
+const handleSave = async () => {
+  if (!formData.code || !formData.codeType || !formData.results) {
+    toast.error("Please fill all required fields", { position: "top-center" });
+    return;
+  }
 
-    try {
+  try {
+    if (selectedTip) {
+      // Editing existing
       await dispatch(
-        updateCode({ tipId: selectedTip.id, formData })
+        updateCode({ codeId: selectedTip.id, formData })
       ).unwrap();
-
-      toast.success("Code updated successfully");
-      closeEdit();
-      dispatch(fetchCodes());
-    } catch (err) {
-      toast.error("Error updating code: " + (err?.message || err));
+    } else {
+      // Creating new
+      await dispatch(createCode(formData)).unwrap();
     }
-  };
+
+    closeEdit();
+    dispatch(fetchCodes());
+  } catch (err) {
+    toast.error("Error saving code: " + (err?.message || err));
+  }
+};
+
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
     try {
       await dispatch(deleteCode(confirmDelete.id)).unwrap();
-      toast.success("Code deleted");
       closeDelete();
       dispatch(fetchCodes());
     } catch (err) {
-      toast.error("Error deleting code: " + (err?.message || err));
-    }
+      toast.error("Error deleting code: " + (err?.message || err));}
   };
 
   const getResultBadge = (result) => {
@@ -220,7 +225,7 @@ const AdminVip = () => {
 
           <Button
             onClick={() => {
-              // Open new blank form for creating a code (optional - currently we only support edit/delete)
+              // Open new blank form for creating a code (optional - currently we only support edit/delete) plus add new code by dispaching action createCode
               setSelectedTip(null);
               setFormData({ code: "", codeType: "", results: "pending" });
               setShowEditDialog(true);
