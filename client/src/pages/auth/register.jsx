@@ -26,7 +26,7 @@ const AuthRegister = () => {
 
   useEffect(() => {
     if (registerStatus === "success") {
-      navigate("/auth/verify-otp");
+      navigate("/auth/login");
     }
   }, [registerStatus, navigate]);
 
