@@ -5,7 +5,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM("1xbet", "secretbet", "afropari"),
       allowNull: false,
     },
-
     results: {
       type: DataTypes.ENUM("win", "loss", "pending"),
       allowNull: true,

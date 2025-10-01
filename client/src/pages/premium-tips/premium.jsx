@@ -1,6 +1,9 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable react/prop-types */
 /** @format */
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO } from "date-fns";
 import { Check, Zap, Clock, Copy, Crown, Filter, Search, TrendingUp, Users, Award } from "lucide-react";

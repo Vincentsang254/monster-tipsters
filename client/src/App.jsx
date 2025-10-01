@@ -22,8 +22,7 @@ import AdminTips from "./pages/admin-view/admin-tips";
 import AdminAddTips from "./components/admin-view/tips/admin-add-tips";
 import AdminViewUser from "./components/admin-view/users/admin-view-user";
 import ImageUpload from "./components/admin-view/images/upload";
-import AdminJackpots from "./pages/admin-view/admin-jackpots";
-import AdminAddJackpot from "./components/admin-view/jackpots/admin-add-jackpots";
+
 
 // User Pages
 import Home from "./pages/user-view/common/Home";
@@ -40,6 +39,8 @@ import AdminPaymentsHistory from "./pages/admin-view/admin-view-payments";
 import { loadUser } from "./features/slices/authSlice";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
+import AdminVip from "./pages/admin-view/admin-vip";
+import AdminAddVip from "./components/admin-view/vip/admin-add-vip";
 
 const App = ({ isAuthenticated, user }) => {
 
@@ -109,9 +110,9 @@ const App = ({ isAuthenticated, user }) => {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="tips" element={<AdminTips />} />
-          <Route path="jackpots" element={<AdminJackpots />} />
+          <Route path="vip" element={<AdminVip />} />
           <Route path="post" element={<AdminAddTips />} />
-          <Route path="add" element={<AdminAddJackpot />} />
+          <Route path="add-vip" element={<AdminAddVip />} />
           <Route path="view/user/:userId" element={<AdminViewUser />} />
           <Route path="upload" element={<ImageUpload />} />
           <Route path="payments" element={<AdminPaymentsHistory />} />

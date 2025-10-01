@@ -51,9 +51,9 @@ const adminSidebarMenuItems = [
     icon: <BadgeCheck className="w-5 h-5" />,
   },
   {
-    id: "jackpots",
-    label: "Jackpots",
-    path: "/admin/jackpots",
+    id: "vips",
+    label: "Vips Management",
+    path: "/admin/vip",
     icon: <Image className="w-5 h-5" />,
   },
   {
