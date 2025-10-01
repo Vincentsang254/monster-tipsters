@@ -57,12 +57,12 @@ const signup = async (req, res) => {
     });
 
     // Send a verification email
-    await sendVerificationEmail(user.email, user.verificationCode);
+    // await sendVerificationEmail(user.email, user.verificationCode);
 
     res.status(201).json({
       success: true,
       message:
-        "User registered successfully. A verification code has been sent to your email.",
+        "User registered successfully.",
       data: { userId: user.id, email: user.email }, // Optionally return user data except sensitive fields
     });
   } catch (error) {
