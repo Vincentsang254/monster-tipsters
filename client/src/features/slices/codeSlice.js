@@ -62,7 +62,7 @@ export const deleteCode = createAsyncThunk(
 
 export const updateCode = createAsyncThunk(
   "codes/updateCode",
-  async ({ codeId, formData }, { rejectWithValue }) => {
+  async ({ codeId, formData }) => {
     try {
       const response = await axios.put(
         `${url}/codes/update/${codeId}`,
@@ -80,7 +80,6 @@ export const updateCode = createAsyncThunk(
         position: "top-center",
       });
 
-      return rejectWithValue(error.response?.data?.message);
     }
   }
 );
