@@ -62,12 +62,13 @@ export const deleteCode = createAsyncThunk(
 
 export const updateCode = createAsyncThunk(
   "codes/updateCode",
-  async ({ codeId, formData }) => {
+  async ({ codeId, formData }, {rejectWithValue}) => {
     try {
+      const headers = await setHeaders()
       const response = await axios.put(
         `${url}/codes/update/${codeId}`,
         formData,
-        setHeaders()
+        headers
       );
 
       toast.success(response.data.message, {
@@ -76,9 +77,11 @@ export const updateCode = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message, {
+      console.log(error.response.data.message);
+      toast.error(error.response.data.message, {
         position: "top-center",
       });
+      return rejectWithValue(error.response.data.message)
 
     }
   }
@@ -143,7 +146,7 @@ const codeSlice = createSlice({
       })
       .addCase(updateCode.rejected, (state, action) => {
         state.status = "rejected";
-        state.error = action.payload;
+        state.error = action.payload.message;
       });
   },
 });
