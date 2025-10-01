@@ -62,26 +62,29 @@ export const deleteCode = createAsyncThunk(
 
 export const updateCode = createAsyncThunk(
   "codes/updateCode",
-  async (codeId, formData, { rejectWithValue }) => {
+  async ({ codeId, formData }, { rejectWithValue }) => {
     try {
       const response = await axios.put(
         `${url}/codes/update/${codeId}`,
         formData,
         setHeaders()
       );
+
       toast.success(response.data.message, {
         position: "top-center",
       });
-      console.log("response.data", response.data);
+
       return response.data;
     } catch (error) {
-      toast.error(error.response.data.message, {
+      toast.error(error.response?.data?.message, {
         position: "top-center",
       });
-      return rejectWithValue(error.response.data.message);
+
+      return rejectWithValue(error.response?.data?.message);
     }
   }
 );
+
 
 const codeSlice = createSlice({
   name: "codes",
