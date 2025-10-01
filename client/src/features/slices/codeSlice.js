@@ -12,7 +12,7 @@ const initialState = {
 
 export const fetchCodes = createAsyncThunk(
   "codes/fetchCodes",
-  async () => {
+  async (_, {rejectWithValue}) => {
     try {
       const response = await axios.get(`${url}/codes/get`, setHeaders());
       return response.data;
@@ -20,42 +20,46 @@ export const fetchCodes = createAsyncThunk(
       toast.error(error.response.data.message, {
         position: "top-center",
       });
-      throw error;
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
 
 export const createCode = createAsyncThunk(
   "codes/createCode",
-  async (values) => {
+  async (values, {rejectWithValue}) => {
     try {
+      const headers = await setHeaders()
       const response = await axios.post(
         `${url}/codes/create`,
         values,
-        setHeaders()
+  headers
       );
       return response.data;
     } catch (error) {
       toast.error(error.response.data.message, {
         position: "top-center",
       });
-      throw error;
+   
+      return rejectWithValue(error.response.data.message)
     }
   }
 );
 
 export const deleteCode = createAsyncThunk(
   "codes/deleteCode",
-  async (codeId) => {
+  async (codeId, {rejectWithValue}) => {
     try {
-      await axios.delete(`${url}/codes/delete/${codeId}`, setHeaders());
+      const headers = await setHeaders()
+      await axios.delete(`${url}/codes/delete/${codeId}`, headers);
       return codeId;
     } catch (error) {
       console.error("Error deleting code:", error);
       toast.error(error.response.data.message, {
         position: "top-center",
       });
-      throw error;
+      return rejectWithValue(error.response.data.message)
+     
     }
   }
 );
