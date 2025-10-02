@@ -232,51 +232,45 @@ const changePassword = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   try {
-    const token = req.cookies.refreshToken;
-    if (!token) return res.status(401).json({ message: "Refresh token missing" });
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(401).json({ message: "Refresh token missing" });
 
-    jwt.verify(
-      token,
-      process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey",
-      async (err, decoded) => {
-        if (err) return res.status(403).json({ message: "Invalid refresh token" });
+    jwt.verify(refreshToken, REFRESH_SECRET, (err, user) => {
+      if (err) return res.status(403).json({ message: "Invalid refresh token" });
 
-        const user = await Users.findByPk(decoded.id);
-        if (!user) return res.status(404).json({ message: "User not found" });
+      const newAccessToken = jwt.sign(
+        { id: user.id, email: user.email, userType: user.userType, name: user.name, phoneNumber: user.phoneNumber },
+        ACCESS_SECRET,
+        { expiresIn: "15m" }
+      );
 
-        const { accessToken, refreshToken } = generateAuthToken(user);
+      // set cookie (optional)
+      res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000,
+      });
 
-        // Update cookies
-        res.cookie("accessToken", accessToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 15 * 60 * 1000,
-        });
-        res.cookie("refreshToken", refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
-        res.json({
-          success: true,
-          message: "Access token refreshed",
-          data: {
-            id: user.id,
-            email: user.email,
-            userType: user.userType,
-            phoneNumber: user.phoneNumber,
-            name: user.name,
-          },
-        });
-      }
-    );
+      // ✅ send back full data
+      res.json({
+        success: true,
+        message: "Access token refreshed",
+        user: {
+          id: user.id,
+          email: user.email,
+          userType: user.userType,
+          name: user.name,
+          phoneNumber: user.phoneNumber,
+        },
+        accessToken: newAccessToken,
+      });
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const logout = async (req, res) => {
   try {
