@@ -92,7 +92,7 @@ export const refreshToken = createAsyncThunk(
         accessToken: res.data.accessToken,
       };
     } catch (error) {
-      toast.error(error.response?.data?.message || "Token refresh failed", {
+      toast.error(error.response?.data?.message, {
         position: "top-center",
       });
       return rejectWithValue(error.response?.data?.message);
@@ -106,9 +106,9 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loadUser(state, action) {
-      state.user = action.payload.user;
+      state.user = action.payload;
       state.accessToken = action.payload.accessToken;
-      state.userLoaded = !!action.payload.user;
+      state.userLoaded = !!action.payload;
     },
   },
   extraReducers: (builder) => {

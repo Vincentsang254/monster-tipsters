@@ -23,7 +23,7 @@ const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
         if (refreshToken.fulfilled.match(resultAction)) {
           // resultAction.payload = { user, accessToken }
           const { user, accessToken } = resultAction.payload;
-          dispatch(loadUser({ ...user, token: accessToken }));
+          dispatch(loadUser({ user, token: accessToken }));
         } else {
           dispatch(logoutUser());
         }
