@@ -56,8 +56,6 @@ const signup = async (req, res) => {
       verified: false,
     });
 
-    // Send a verification email
-    // await sendVerificationEmail(user.email, user.verificationCode);
 
     res.status(201).json({
       success: true,
@@ -94,13 +92,7 @@ const login = async (req, res) => {
         .status(404)
         .json({ status: false, message: "Email doesn't exist" });
     }
-    // Check if the user is verified
-    // if (!user.verified) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     message: "Account is not verified. Please verify your email first.",
-    //   });
-    // }
+  
     const match = await bcryptjs.compare(password, user.password);
     if (!match) {
       return res
@@ -108,9 +100,16 @@ const login = async (req, res) => {
         .json({ status: false, message: "Wrong password." });
     }
 
-    const userToken = generateAuthToken(user);
+    // const userToken = generateAuthToken(user);
+    const userToken = generateAuthToken(user, res);
 
-    res.status(200).json({ message: "Login success", token: userToken });
+    res.status(200).json({ message: "Login success", data: {
+      id: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      name: user.name,
+      userType: user.userType
+    } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message })
@@ -230,10 +229,46 @@ const changePassword = async (req, res) => {
   }
 };
 
+ export const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(401).json({ message: "Refresh token missing" });
+
+    jwt.verify(refreshToken, process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey", (err, user) => {
+      if (err) return res.status(403).json({ message: "Invalid refresh token" });
+
+      const newAccessToken = jwt.sign(
+        { id: user.id, email: user.email, userType: user.userType },
+        process.env.ACCESS_SECRET || "sangkiplaimportantkeyaccesssecretkey",
+        { expiresIn: "15m" }
+      );
+
+      res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.json({ success: true, message: "Access token refreshed" });
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+ export const logout = (_, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
 module.exports = {
   login,
   signup,
   verifyAccount,
   changePassword,
   forgotPassword,
+  logout,
+  refreshToken
 }
