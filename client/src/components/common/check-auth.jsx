@@ -2,34 +2,33 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
-import { loadUser, logoutUser } from "@/features/slices/authSlice";
+import { loadUser, logoutUser, refreshToken } from "@/features/slices/authSlice";
 import Loader from "./Loader";
-import axios from "axios";
 
 const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
   const location = useLocation();
   const dispatch = useDispatch();
-  const userType = useSelector((state) => state.auth.userType);
-  const isAuthenticated = useSelector((state) => Boolean(state.auth.token));
+
+  // Pull directly from Redux
+  const userType = useSelector((state) => state.auth.user?.userType);
+  const isAuthenticated = useSelector((state) => Boolean(state.auth.user));
   const [checkingToken, setCheckingToken] = useState(true);
 
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        // Call backend refresh endpoint, cookies will be sent automatically
-        const res = await axios.get("/api/auth/refresh", { withCredentials: true });
+        // ✅ Dispatch refreshToken thunk instead of manual axios call
+        const resultAction = await dispatch(refreshToken());
 
-        if (res.data?.accessToken) {
-          // Save token in Redux (not in localStorage)
-          dispatch(loadUser({
-            token: res.data.accessToken,
-            ...res.data.user
-          }));
+        if (refreshToken.fulfilled.match(resultAction)) {
+          // resultAction.payload = { user, accessToken }
+          const { user, accessToken } = resultAction.payload;
+          dispatch(loadUser({ ...user, token: accessToken }));
         } else {
           dispatch(logoutUser());
         }
       } catch (error) {
-        console.error("Auth check failed:", error.response?.data || error.message);
+        console.error("Auth check failed:", error);
         dispatch(logoutUser());
       } finally {
         setCheckingToken(false);
