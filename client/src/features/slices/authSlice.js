@@ -9,6 +9,7 @@ axios.defaults.withCredentials = true;
 // Initial state for the auth slice
 const initialState = {
   user: null,
+  accessToken: null,
   registerStatus: "",
   registerError: "",
   loginStatus: "",
@@ -61,7 +62,11 @@ export const loginUser = createAsyncThunk(
       });
 
       console.log("return data from loginUser function", response.data);
-      return response.data;
+      //return response.data;
+      return {
+        user: response.data.data,
+        accessToken: response.data.accessToken,
+      };
     } catch (error) {
       toast.error(error.response.data.message, {
         position: "top-center",
@@ -81,8 +86,11 @@ export const refreshToken = createAsyncThunk(
   "auth/refreshToken",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${url}/auth/refresh-token`, {}, { withCredentials: true });
-      return response.data;
+      const res = await axios.post(`${url}/auth/refresh-token`, {}, { withCredentials: true });
+      return {
+        user: res.data.data,
+        accessToken: res.data.accessToken,
+      };
     } catch (error) {
       toast.error(error.response?.data?.message || "Token refresh failed", {
         position: "top-center",
@@ -98,8 +106,9 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loadUser(state, action) {
-      state.user = action.payload;
-      state.userLoaded = !!action.payload;
+      state.user = action.payload.user;
+      state.accessToken = action.payload.accessToken;
+      state.userLoaded = !!action.payload.user;
     },
   },
   extraReducers: (builder) => {
@@ -114,7 +123,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.registerStatus = "rejected";
-        state.registerError = action.payload.message;
+        state.registerError = action.payload;
       })
       .addCase(loginUser.pending, (state) => {
         state.loginStatus = "pending";
@@ -122,18 +131,24 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loginStatus = "success";
         state.user = action.payload.data;
+        state.accessToken = action.payload.accessToken;
+        state.userLoaded = true;
         console.log("user login data", action.payload.data);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loginStatus = "rejected";
-        state.loginError = action.payload.message;
+        state.loginError = action.payload;
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
+        state.accessToken = null;
         state.userLoaded = false;
       })
       .addCase(refreshToken.fulfilled, (state, action) => {
-        state.user = action.payload?.data || action.payload;
+        state.user = action.payload?.data;
+        state.accessToken = action.payload.accessToken;
+        state.userLoaded = true;
+        console.log("user refresh data", action.payload);
       });
   },
 });

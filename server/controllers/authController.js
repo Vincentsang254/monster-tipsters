@@ -10,8 +10,9 @@ const {
 } = require("../brevo/email.brevo");
 const generateAuthToken = require("../utils/generateAuthToken");
 const { Users } = require("../models");
-const validator = require("validator");
 const { Op } = require("sequelize");
+const jwt = require("jsonwebtoken"); // missing in your file
+
 
 const signup = async (req, res) => {
   try {
@@ -70,52 +71,46 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ status: false, message: "Please fill in email and password!" });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res
-        .status(400)
-        .json({ status: false, message: "Please use a valid email!" });
-    }
-
     const user = await Users.findOne({ where: { email } });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ status: false, message: "Email doesn't exist" });
-    }
 
-    const match = await bcryptjs.compare(password, user.password);
-    if (!match) {
-      return res
-        .status(401)
-        .json({ status: false, message: "Wrong password." });
-    }
+    if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
-    // const userToken = generateAuthToken(user);
-    const userToken = generateAuthToken(user, res);
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(401).json({ message: "Invalid email or password" });
 
-    res.status(200).json({
-      message: "Login success",
+    // 🔑 Generate tokens
+    const { accessToken, refreshToken } = generateAuthToken(user);
+
+    // Store tokens in cookies
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000, // 15 min
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
       data: {
         id: user.id,
         email: user.email,
+        userType: user.userType,
         phoneNumber: user.phoneNumber,
         name: user.name,
-        userType: user.userType,
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const forgotPassword = async (req, res) => {
   try {
@@ -237,37 +232,37 @@ const changePassword = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken)
-      return res.status(401).json({ message: "Refresh token missing" });
+    const token = req.cookies.refreshToken;
+    if (!token) return res.status(401).json({ message: "Refresh token missing" });
 
     jwt.verify(
-      refreshToken,
+      token,
       process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey",
-      (err, user) => {
-        if (err)
-          return res.status(403).json({ message: "Invalid refresh token" });
+      async (err, decoded) => {
+        if (err) return res.status(403).json({ message: "Invalid refresh token" });
 
-        // Create new access token
-        const newAccessToken = jwt.sign(
-          { id: user.id, email: user.email, userType: user.userType },
-          process.env.ACCESS_SECRET || "sangkiplaimportantkeyaccesssecretkey",
-          { expiresIn: "15m" }
-        );
+        const user = await Users.findByPk(decoded.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Save access token in cookie
-        res.cookie("accessToken", newAccessToken, {
+        const { accessToken, refreshToken } = generateAuthToken(user);
+
+        // Update cookies
+        res.cookie("accessToken", accessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
           maxAge: 15 * 60 * 1000,
         });
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
-        // Send back user info and new token
         res.json({
           success: true,
           message: "Access token refreshed",
-          accessToken: newAccessToken, // in case frontend needs it
           data: {
             id: user.id,
             email: user.email,
@@ -283,10 +278,24 @@ const refreshToken = async (req, res) => {
   }
 };
 
-const logout = (_, res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-  res.status(200).json({ message: "Logged out successfully" });
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 module.exports = {
