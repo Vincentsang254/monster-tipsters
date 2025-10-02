@@ -72,20 +72,25 @@ export const loginUser = createAsyncThunk(
 );
 
 export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
-  const response = await axios.post(
-    `${url}/auth/logout`,
-    {},
-    {
-      withCredentials: true,
-    }
-  );
-
-  toast.success(response.data.message, {
-    position: "top-center",
-  });
-
+  const response = await axios.post(`${url}/auth/logout`, {}, { withCredentials: true });
+  toast.success(response.data.message, { position: "top-center" });
   return null;
 });
+
+export const refreshToken = createAsyncThunk(
+  "auth/refreshToken",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${url}/auth/refresh-token`, {}, { withCredentials: true });
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Token refresh failed", {
+        position: "top-center",
+      });
+      return rejectWithValue(error.response?.data?.message);
+    }
+  }
+);
 
 // Auth slice
 const authSlice = createSlice({
@@ -127,10 +132,9 @@ const authSlice = createSlice({
         state.user = null;
         state.userLoaded = false;
       })
-      .addCase (loadUser.fulfilled, (state, action) => {
-        state.user = action.payload.data;
-        state.userLoaded = true;
-      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.user = action.payload?.data || action.payload;
+      });
   },
 });
 

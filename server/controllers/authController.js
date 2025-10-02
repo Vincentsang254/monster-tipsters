@@ -56,11 +56,9 @@ const signup = async (req, res) => {
       verified: false,
     });
 
-
     res.status(201).json({
       success: true,
-      message:
-        "User registered successfully.",
+      message: "User registered successfully.",
       data: { userId: user.id, email: user.email }, // Optionally return user data except sensitive fields
     });
   } catch (error) {
@@ -92,7 +90,7 @@ const login = async (req, res) => {
         .status(404)
         .json({ status: false, message: "Email doesn't exist" });
     }
-  
+
     const match = await bcryptjs.compare(password, user.password);
     if (!match) {
       return res
@@ -103,18 +101,21 @@ const login = async (req, res) => {
     // const userToken = generateAuthToken(user);
     const userToken = generateAuthToken(user, res);
 
-    res.status(200).json({ message: "Login success", data: {
-      id: user.id,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      name: user.name,
-      userType: user.userType
-    } });
+    res.status(200).json({
+      message: "Login success",
+      data: {
+        id: user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        name: user.name,
+        userType: user.userType,
+      },
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: error.message })
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
 const forgotPassword = async (req, res) => {
   try {
@@ -124,7 +125,9 @@ const forgotPassword = async (req, res) => {
     const user = await Users.findOne({ where: { email } });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Generate a reset token using crypto
@@ -145,7 +148,10 @@ const forgotPassword = async (req, res) => {
 
     res
       .status(200)
-      .json({ success: true, message: "Password reset link sent successfully" });
+      .json({
+        success: true,
+        message: "Password reset link sent successfully",
+      });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -180,7 +186,7 @@ const verifyAccount = async (req, res) => {
       .status(200)
       .json({ status: true, message: "Account successfully verified" });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -232,26 +238,46 @@ const changePassword = async (req, res) => {
 const refreshToken = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.status(401).json({ message: "Refresh token missing" });
+    if (!refreshToken)
+      return res.status(401).json({ message: "Refresh token missing" });
 
-    jwt.verify(refreshToken, process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey", (err, user) => {
-      if (err) return res.status(403).json({ message: "Invalid refresh token" });
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey",
+      (err, user) => {
+        if (err)
+          return res.status(403).json({ message: "Invalid refresh token" });
 
-      const newAccessToken = jwt.sign(
-        { id: user.id, email: user.email, userType: user.userType },
-        process.env.ACCESS_SECRET || "sangkiplaimportantkeyaccesssecretkey",
-        { expiresIn: "15m" }
-      );
+        // Create new access token
+        const newAccessToken = jwt.sign(
+          { id: user.id, email: user.email, userType: user.userType },
+          process.env.ACCESS_SECRET || "sangkiplaimportantkeyaccesssecretkey",
+          { expiresIn: "15m" }
+        );
 
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000,
-      });
+        // Save access token in cookie
+        res.cookie("accessToken", newAccessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 15 * 60 * 1000,
+        });
 
-      res.json({ success: true, message: "Access token refreshed" });
-    });
+        // Send back user info and new token
+        res.json({
+          success: true,
+          message: "Access token refreshed",
+          accessToken: newAccessToken, // in case frontend needs it
+          data: {
+            id: user.id,
+            email: user.email,
+            userType: user.userType,
+            phoneNumber: user.phoneNumber,
+            name: user.name,
+          },
+        });
+      }
+    );
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -270,5 +296,5 @@ module.exports = {
   changePassword,
   forgotPassword,
   logout,
-  refreshToken
-}
+  refreshToken,
+};
