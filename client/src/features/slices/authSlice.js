@@ -107,7 +107,7 @@ const authSlice = createSlice({
   reducers: {
     loadUser(state, action) {
       state.user = action.payload;
-      state.accessToken = action.payload.accessToken;
+      state.accessToken = action.payload;
       state.userLoaded = !!action.payload;
     },
   },
@@ -146,7 +146,7 @@ const authSlice = createSlice({
       })
       .addCase(refreshToken.fulfilled, (state, action) => {
         state.user = action.payload?.data;
-        state.accessToken = action.payload.accessToken;
+        state.accessToken = action.payload;
         state.userLoaded = true;
         console.log("user refresh data", action.payload);
       });
