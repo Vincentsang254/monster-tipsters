@@ -74,7 +74,7 @@ export const refreshToken = createAsyncThunk(
   "auth/refreshToken",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${url}/auth/refreshToken`, {
+      const response = await axios.get(`${url}/auth/refresh-token`, {
         headers: { "x-auth-token": localStorage.getItem("token") },
       });
       console.log("response from refresh token",response.data);
