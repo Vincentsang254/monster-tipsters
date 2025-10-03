@@ -36,7 +36,7 @@ import UserJackpots from "./pages/user-view/jackpots/user-jackpots";
 import UnauthPage from "./pages/unauth-page";
 import NotFound from "./pages/not-found/Notfound";
 import AdminPaymentsHistory from "./pages/admin-view/admin-view-payments";
-import { loadUser } from "./features/slices/authSlice";
+import { loadUser, refreshToken } from "./features/slices/authSlice";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import AdminVip from "./pages/admin-view/admin-vip";
