@@ -45,6 +45,15 @@ import AdminAddVip from "./components/admin-view/vip/admin-add-vip";
 const App = ({ isAuthenticated, user }) => {
 
   const dispatch = useDispatch();
+  const { token } = useSelector((state) => state.auth);
+
+  console.log("token: ", token)
+
+  useEffect(() => {
+    if (token) {
+      dispatch(refreshToken());
+    }
+  }, [token, dispatch]);
  
 
   // Load user on app initialization

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { url } from "./api";
 import { toast } from "react-toastify";
 
@@ -28,50 +28,67 @@ export const registerUser = createAsyncThunk(
         name: values.name,
         password: values.password,
       });
-      
+
       toast.success(response.data.message, {
-				position: "top-center",
-			});
+        position: "top-center",
+      });
 
       // Return only the necessary information (e.g., user details)
       return { userData: response.data.data, message: response.data.message };
     } catch (error) {
       toast.error(error.response.data.message, {
-				position: "top-center",
-			});
+        position: "top-center",
+      });
       return rejectWithValue(error.response.data.message);
     }
   }
 );
 
-  // Async thunk for user login
-  export const loginUser = createAsyncThunk(
-	"auth/loginUser",
-	async (values, { rejectWithValue }) => {
-	  try {
-		const response = await axios.post(`${url}/auth/login`, {
-		  email: values.email,
-		  password: values.password,
-		});
-  
-		const token = response.data.token;
-    localStorage.setItem("token", token); 
-		// localStorage.setItem("token", JSON.stringify(token));
-  
-		toast.success(response.data.message, {
-      position: "top-center",
-    });
-		return token;
-	  } catch (error) {
-		toast.error(error.response.data.message, {
-      position: "top-center",
-    } );
-		return rejectWithValue(error.response.data.message);
-	  }
-	}
-  );
+// Async thunk for user login
+export const loginUser = createAsyncThunk(
+  "auth/loginUser",
+  async (values, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${url}/auth/login`, {
+        email: values.email,
+        password: values.password,
+      });
 
-  // For token expiry handling:
+      const token = response.data.token;
+      localStorage.setItem("token", token);
+      // localStorage.setItem("token", JSON.stringify(token));
+
+      toast.success(response.data.message, {
+        position: "top-center",
+      });
+      return token;
+    } catch (error) {
+      toast.error(error.response.data.message, {
+        position: "top-center",
+      });
+      return rejectWithValue(error.response.data.message);
+    }
+  }
+);
+export const refreshToken = createAsyncThunk(
+  "auth/refreshToken",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${url}/auth/refreshToken`, {
+        headers: { "x-auth-token": localStorage.getItem("token") },
+      });
+      console.log("response from refresh token",response.data);
+      return response.data.data; // latest user info
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Session expired", {
+        position: "top-center",
+      });
+      return rejectWithValue(error.response?.data?.message);
+    }
+  }
+);
+
+// For token expiry handling:
 const token = localStorage.getItem("token");
 if (token) {
   const decodedToken = jwtDecode(token);
@@ -82,33 +99,6 @@ if (token) {
   }
 }
 
-export const verifyAccount = createAsyncThunk(
-  "auth/verifyAccount",
-  async (values, { rejectWithValue }) => {
-      try {
-          const response = await axios.post(`${url}/auth/verify-account`, {
-              email: values.email,
-              verificationCode: values.verificationCode,
-          });
-
-          const token = response.data.token;
-          localStorage.setItem("token", token); // Store the token
-
-          toast.success(response.data.message, {
-              position: "top-center",
-          });
-
-          return token; // Return token to the reducer or next process
-      } catch (error) {
-
-          toast.error(error.response?.data?.message || "An error occurred", {
-              position: "top-center",
-          });
-
-          return rejectWithValue(error.response?.data?.message || "An error occurred");
-      }
-  }
-);
 
 // Auth slice
 const authSlice = createSlice({
@@ -151,8 +141,20 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        return {
+          ...state,
+          phoneNumber: action.payload.phoneNumber,
+          email: action.payload.email,
+          name: action.payload.name,
+          id: action.payload.id,
+          userType: action.payload.userType,
+          userLoaded: true,
+        };
+      })
+
       .addCase(registerUser.pending, (state) => {
-      return {...state, registerStatus: "pending"};
+        return { ...state, registerStatus: "pending" };
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         const userData = action.payload.userData;
@@ -163,7 +165,7 @@ const authSlice = createSlice({
             email: userData.email,
             name: userData.name,
             id: userData.id,
-            userType: userData.userType || "client",  // Default to "user" if not provided
+            userType: userData.userType || "client", // Default to "user" if not provided
             profilePic: userData.profilePic,
             verificationCode: userData.verificationCode,
             verified: userData.verified,
@@ -173,7 +175,6 @@ const authSlice = createSlice({
         return state;
       })
       .addCase(registerUser.rejected, (state, action) => {
-
         return {
           ...state,
           registerStatus: "rejected",
@@ -181,10 +182,9 @@ const authSlice = createSlice({
         };
       })
       .addCase(loginUser.pending, (state) => {
-       return  {...state, loginStatus: "pending"}
+        return { ...state, loginStatus: "pending" };
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-
         if (action.payload) {
           const user = jwtDecode(action.payload);
           return {
@@ -201,14 +201,12 @@ const authSlice = createSlice({
         return state;
       })
       .addCase(loginUser.rejected, (state, action) => {
-
         return {
           ...state,
           loginStatus: "rejected",
           loginError: action.payload,
         };
-      })
-
+      });
   },
 });
 

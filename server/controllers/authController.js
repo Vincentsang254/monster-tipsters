@@ -230,10 +230,31 @@ const changePassword = async (req, res) => {
   }
 };
 
+const refreshToken = async (req, res) => {
+  try {
+    const user = await Users.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        userType: user.userType,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   login,
   signup,
   verifyAccount,
   changePassword,
   forgotPassword,
+  refreshToken
 }
