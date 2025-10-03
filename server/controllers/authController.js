@@ -6,13 +6,15 @@ const {
   sendPasswordResetEmail,
   sendResetSuccessEmail,
   sendWelcomeEmail,
-  sendVerificationEmail,
+
 } = require("../brevo/email.brevo");
 const generateAuthToken = require("../utils/generateAuthToken");
 const { Users } = require("../models");
 const { Op } = require("sequelize");
 const jwt = require("jsonwebtoken"); // missing in your file
 
+const ACCESS_SECRET = process.env.ACCESS_SECRET || "sangkiplaimportantkeyaccesssecretkey";
+const REFRESH_SECRET = process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey";
 
 const signup = async (req, res) => {
   try {
@@ -232,41 +234,56 @@ const changePassword = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.status(401).json({ message: "Refresh token missing" });
+    const token = req.cookies.refreshToken;
 
-    jwt.verify(refreshToken, REFRESH_SECRET, (err, user) => {
-      if (err) return res.status(403).json({ message: "Invalid refresh token" });
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Refresh token missing" });
+    }
 
-      const newAccessToken = jwt.sign(
-        { id: user.id, email: user.email, userType: user.userType, name: user.name, phoneNumber: user.phoneNumber },
-        ACCESS_SECRET,
-        { expiresIn: "15m" }
-      );
+    // Verify refresh token
+    jwt.verify(token, REFRESH_SECRET, async (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ success: false, message: "Invalid refresh token" });
+      }
 
-      // set cookie (optional)
+      // Ensure all needed fields exist in decoded
+      const userData = {
+        id: decoded.id,
+        email: decoded.email,
+        userType: decoded.userType || "user",
+        name: decoded.name,
+        phoneNumber: decoded.phoneNumber,
+      };
+
+      // Generate new access token
+      const newAccessToken = jwt.sign(userData, ACCESS_SECRET, { expiresIn: "15m" });
+
+      // Reset access token cookie
       res.cookie("accessToken", newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "None",
-        maxAge: 15 * 60 * 1000,
+        sameSite: "None", // Allow cross-origin requests
+        maxAge: 15 * 60 * 1000, // 15 minutes
       });
 
-      // ✅ send back full data
+      // Optional: refresh the refreshToken cookie as well
+      res.cookie("refreshToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "None",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      // ✅ Send back user + new access token
       res.json({
         success: true,
         message: "Access token refreshed",
-        user: {
-          id: user.id,
-          email: user.email,
-          userType: user.userType,
-          name: user.name,
-          phoneNumber: user.phoneNumber,
-        },
+        user: userData,        // matches your Redux slice
         accessToken: newAccessToken,
       });
     });
   } catch (error) {
+    console.error("Refresh token error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

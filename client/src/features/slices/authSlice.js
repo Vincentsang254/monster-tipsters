@@ -31,9 +31,10 @@ export const registerUser = createAsyncThunk(
         position: "top-center",
       });
 
-      console.log("return data from registerUser function",response.data);
-      // Return only the necessary information (e.g., user details)
-      return { userData: response.data, message: response.data.message };
+      console.log("return data from registerUser function",response.data.data);
+     
+      return { user: response.data.data, message: response.data.message };
+      
     } catch (error) {
       toast.error(error.response.data.message, {
         position: "top-center",
@@ -61,12 +62,13 @@ export const loginUser = createAsyncThunk(
         position: "top-center",
       });
 
-      console.log("return data from loginUser function", response.data);
+      console.log("return data from loginUser function", response.data.data);
       //return response.data;
       return {
-        user: response.data.data,
-        accessToken: response.data.accessToken,
+        user: response.data.data,            // user object from backend
+        accessToken: response.data.accessToken || null, // fallback null
       };
+    
     } catch (error) {
       toast.error(error.response.data.message, {
         position: "top-center",
@@ -87,8 +89,12 @@ export const refreshToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.post(`${url}/auth/refresh-token`, {}, { withCredentials: true });
+      
+
+      console.log("user data from  refresh token", res.data.data);
+      console.log("refresh token itself", res.data.accessToken);
       return {
-        user: res.data.data,
+        user: res.data.user,
         accessToken: res.data.accessToken,
       };
     } catch (error) {
@@ -100,16 +106,17 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
+
 // Auth slice
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    loadUser(state, action) {
-  state.user = action.payload.user;
-  state.accessToken = action.payload.accessToken;
-  state.userLoaded = !!action.payload.user;
-}
+  loadUser(state, action) {
+      state.user = action.payload.user;
+      state.accessToken = action.payload.accessToken;
+      state.userLoaded = !!action.payload.user;
+    },
 
   },
   extraReducers: (builder) => {
@@ -119,8 +126,8 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.registerStatus = "success";
-        state.user = action.payload.data;
-        console.log("user data after signup", action.payload.data);
+        state.user = action.payload;
+        console.log("user data after signup", action.payload);
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.registerStatus = "rejected";
@@ -130,11 +137,12 @@ const authSlice = createSlice({
         state.loginStatus = "pending";
       })
       .addCase(loginUser.fulfilled, (state, action) => {
+        
         state.loginStatus = "success";
-        state.user = action.payload.data;
-        state.accessToken = action.payload.accessToken;
+        state.user = action.payload;
+        state.accessToken = action.payload;
         state.userLoaded = true;
-        console.log("user login data", action.payload.data);
+        console.log("user login data", action.payload);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loginStatus = "rejected";
@@ -146,11 +154,10 @@ const authSlice = createSlice({
         state.userLoaded = false;
       })
       .addCase(refreshToken.fulfilled, (state, action) => {
-        state.user = action.payload?.data;
-        state.accessToken = action.payload;
+  state.user = action.payload.user;           // ✅ Change: was action.payload?.data
+        state.accessToken = action.payload.accessToken; // ✅ Change: was action.payload
         state.userLoaded = true;
-        console.log("user refresh data", action.payload);
-      });
+});
   },
 });
 

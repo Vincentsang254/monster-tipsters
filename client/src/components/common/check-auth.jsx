@@ -9,19 +9,21 @@ const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
   const location = useLocation();
   const dispatch = useDispatch();
 
-  // Pull directly from Redux
-  const userType = useSelector((state) => state.auth.user?.userType);
-  const isAuthenticated = useSelector((state) => Boolean(state.auth.user));
+   // ✅ Pull directly from Redux state
+  const user = useSelector((state) => state.auth.user);
+  const userType = user?.userType;
+  const isAuthenticated = Boolean(user);
   const [checkingToken, setCheckingToken] = useState(true);
+
+  console.log("user from check auth", user)
 
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        // ✅ Dispatch refreshToken thunk instead of manual axios call
         const resultAction = await dispatch(refreshToken());
 
         if (refreshToken.fulfilled.match(resultAction)) {
-          // resultAction.payload = { user, accessToken }
+          
           const { user, accessToken } = resultAction.payload;
           dispatch(loadUser({ user, accessToken }));
         } else {
