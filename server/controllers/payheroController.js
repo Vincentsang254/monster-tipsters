@@ -11,15 +11,15 @@ const { Op } = require("sequelize");
 const apiUsername = process.env.PAYHERO_API_USERNAME || "VpEsJklpEsfBJALIhZTX";
 const apiPassword =
   process.env.PAYHERO_API_PASSWORD ||
-   "XzVWzanrjygz5anOeTx8iQkiShIuTVkKd5atIbRx";
+  "XzVWzanrjygz5anOeTx8iQkiShIuTVkKd5atIbRx";
 const encodedCredentials = Buffer.from(
   `${apiUsername}:${apiPassword}`
 ).toString("base64");
 
 const PAYMENT_TIERS = {
-  499: 3,//499
-  1499: 7,//1499
-  2499: 30,//2499
+  499: 3, //499
+  1499: 7, //1499
+  2499: 30, //2499
 };
 
 // ✅ Cron job: Reset expired VIP users to 'client'
@@ -78,15 +78,14 @@ const initiatePayheroSTKPush = async (req, res) => {
     );
 
     // Save initial payment (status: QUEUED)
-await Payments.create({
-  amount,
-  phoneNumber: formattedPhone,
-  status: "QUEUED",
-  reference: `INV-${id}`,
-  checkoutRequestId: response.data.CheckoutRequestID,
-  userId: id,
-});
-
+    await Payments.create({
+      amount,
+      phoneNumber: formattedPhone,
+      status: "QUEUED",
+      reference: `INV-${id}`,
+      checkoutRequestId: response.data.CheckoutRequestID,
+      userId: id,
+    });
 
     return res.status(200).json({
       success: true,
@@ -126,14 +125,14 @@ const handleCallback = async (req, res) => {
       CheckoutRequestID: checkoutRequestId,
       ExternalReference: reference,
     } = items;
-const userId = reference.split("-")[1];
-if (!userId) {
+    const userId = reference.split("-")[1];
+    if (!userId) {
       return res.status(400).json({
         success: false,
         message: "Invalid reference, user ID missing.",
       });
     }
-  
+
     const user = await Users.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -158,31 +157,30 @@ if (!userId) {
       accessExpiration,
     });
 
-   const payment = await Payments.findOne({
-  where: {
-    reference,
-    checkoutRequestId,
-  },
-});
+    const payment = await Payments.findOne({
+      where: {
+        reference,
+        checkoutRequestId,
+      },
+    });
 
-if (payment) {
-  await payment.update({
-    status,
-    mpesaReceiptNumber,
-  });
-} else {
-  // If payment wasn't saved earlier, create a new one (as a fallback)
-  await Payments.create({
-    amount,
-    phoneNumber,
-    status,
-    reference,
-    checkoutRequestId,
-    mpesaReceiptNumber,
-    userId: user.id,
-  });
-}
-
+    if (payment) {
+      await payment.update({
+        status,
+        mpesaReceiptNumber,
+      });
+    } else {
+      // If payment wasn't saved earlier, create a new one (as a fallback)
+      await Payments.create({
+        amount,
+        phoneNumber,
+        status,
+        reference,
+        checkoutRequestId,
+        mpesaReceiptNumber,
+        userId: user.id,
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -210,10 +208,10 @@ const getPaymentHistory = async (req, res) => {
   } catch (error) {
     console.error("Payment history error:", error.message);
   }
-}
+};
 
 module.exports = {
   initiatePayheroSTKPush,
   handleCallback,
-  getPaymentHistory
+  getPaymentHistory,
 };
