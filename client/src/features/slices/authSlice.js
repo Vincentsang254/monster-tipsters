@@ -31,10 +31,9 @@ export const registerUser = createAsyncThunk(
         position: "top-center",
       });
 
-      console.log("return data from registerUser function",response.data.data);
-     
+      console.log("return data from registerUser function", response.data.data);
+
       return { user: response.data.data, message: response.data.message };
-      
     } catch (error) {
       toast.error(error.response.data.message, {
         position: "top-center",
@@ -65,10 +64,9 @@ export const loginUser = createAsyncThunk(
       console.log("return data from loginUser function", response.data.data);
       //return response.data;
       return {
-        user: response.data.data,            // user object from backend
+        user: response.data.data, // user object from backend
         accessToken: response.data.accessToken || null, // fallback null
       };
-    
     } catch (error) {
       toast.error(error.response.data.message, {
         position: "top-center",
@@ -79,7 +77,11 @@ export const loginUser = createAsyncThunk(
 );
 
 export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
-  const response = await axios.post(`${url}/auth/logout`, {}, { withCredentials: true });
+  const response = await axios.post(
+    `${url}/auth/logout`,
+    {},
+    { withCredentials: true }
+  );
   toast.success(response.data.message, { position: "top-center" });
   return null;
 });
@@ -88,8 +90,11 @@ export const refreshToken = createAsyncThunk(
   "auth/refreshToken",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${url}/auth/refresh-token`, {}, { withCredentials: true });
-      
+      const res = await axios.post(
+        `${url}/auth/refresh-token`,
+        {},
+        { withCredentials: true }
+      );
 
       console.log("user data from  refresh token", res.data.data);
       console.log("refresh token itself", res.data.accessToken);
@@ -106,18 +111,16 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
-
 // Auth slice
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-  loadUser(state, action) {
-      state.user = action.payload.user;
-      state.accessToken = action.payload.accessToken;
+    loadUser(state, action) {
+      state.user = action.payload.user || null;
+      state.accessToken = action.payload.accessToken || null;
       state.userLoaded = !!action.payload.user;
     },
-
   },
   extraReducers: (builder) => {
     builder
@@ -137,7 +140,6 @@ const authSlice = createSlice({
         state.loginStatus = "pending";
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        
         state.loginStatus = "success";
         state.user = action.payload;
         state.accessToken = action.payload;
@@ -154,10 +156,12 @@ const authSlice = createSlice({
         state.userLoaded = false;
       })
       .addCase(refreshToken.fulfilled, (state, action) => {
-  state.user = action.payload.user;           // ✅ Change: was action.payload?.data
-        state.accessToken = action.payload.accessToken; // ✅ Change: was action.payload
-        state.userLoaded = true;
-});
+        // ✅ Use payload.user, not payload.data
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.userLoaded = !!action.payload.user; // ensure boolean
+        console.log("user refresh data", action.payload);
+      });
   },
 });
 

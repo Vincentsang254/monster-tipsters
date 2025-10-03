@@ -14,7 +14,13 @@ const generateAuthToken = (user) => {
   );
 
   const refreshToken = jwt.sign(
-    { id: user.id },
+    {
+    id: user.id,
+    email: user.email,
+    userType: user.userType,
+    name: user.name,
+    phoneNumber: user.phoneNumber
+  },
     process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey",
     { expiresIn: "7d" }
   );

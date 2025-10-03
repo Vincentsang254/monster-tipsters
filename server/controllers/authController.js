@@ -77,23 +77,25 @@ const login = async (req, res) => {
 
     if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcryptjs.compare(password, user.password);
     if (!validPassword) return res.status(401).json({ message: "Invalid email or password" });
 
-    // 🔑 Generate tokens
     const { accessToken, refreshToken } = generateAuthToken(user);
 
-    // Store tokens in cookies
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // ✅ Set cookies with proper SameSite & secure for dev/prod
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "Lax",
       maxAge: 15 * 60 * 1000, // 15 min
     });
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "Lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -112,6 +114,51 @@ const login = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+const refreshToken = async (req, res) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Refresh token missing" });
+    }
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    jwt.verify(token, REFRESH_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ success: false, message: "Invalid refresh token" });
+      }
+
+      const payload = {
+        id: decoded.id,
+        email: decoded.email,
+        userType: decoded.userType,
+        name: decoded.name,
+        phoneNumber: decoded.phoneNumber,
+      };
+
+      const newAccessToken = jwt.sign(payload, ACCESS_SECRET, { expiresIn: "15m" });
+
+      // ✅ Reset accessToken cookie properly
+      res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "None" : "Lax",
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.json({
+        success: true,
+        message: "Access token refreshed",
+        user: payload,
+        accessToken: newAccessToken,
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 
 const forgotPassword = async (req, res) => {
@@ -232,61 +279,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-const refreshToken = async (req, res) => {
-  try {
-    const token = req.cookies.refreshToken;
-
-    if (!token) {
-      return res.status(401).json({ success: false, message: "Refresh token missing" });
-    }
-
-    // Verify refresh token
-    jwt.verify(token, REFRESH_SECRET, async (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ success: false, message: "Invalid refresh token" });
-      }
-
-      // Ensure all needed fields exist in decoded
-      const userData = {
-        id: decoded.id,
-        email: decoded.email,
-        userType: decoded.userType || "user",
-        name: decoded.name,
-        phoneNumber: decoded.phoneNumber,
-      };
-
-      // Generate new access token
-      const newAccessToken = jwt.sign(userData, ACCESS_SECRET, { expiresIn: "15m" });
-
-      // Reset access token cookie
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "None", // Allow cross-origin requests
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
-
-      // Optional: refresh the refreshToken cookie as well
-      res.cookie("refreshToken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "None",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      // ✅ Send back user + new access token
-      res.json({
-        success: true,
-        message: "Access token refreshed",
-        user: userData,        // matches your Redux slice
-        accessToken: newAccessToken,
-      });
-    });
-  } catch (error) {
-    console.error("Refresh token error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 
 const logout = async (req, res) => {

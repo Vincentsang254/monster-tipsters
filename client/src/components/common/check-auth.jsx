@@ -21,8 +21,9 @@ const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
     const verifyAuth = async () => {
       try {
         const resultAction = await dispatch(refreshToken());
+        
 
-        if (refreshToken.fulfilled.match(resultAction)) {
+        if (refreshToken.fulfilled.match(resultAction) && resultAction.payload?.user) {
           
           const { user, accessToken } = resultAction.payload;
           dispatch(loadUser({ user, accessToken }));
