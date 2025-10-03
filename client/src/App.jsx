@@ -38,7 +38,7 @@ import NotFound from "./pages/not-found/Notfound";
 import AdminPaymentsHistory from "./pages/admin-view/admin-view-payments";
 import { loadUser } from "./features/slices/authSlice";
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import AdminVip from "./pages/admin-view/admin-vip";
 import AdminAddVip from "./components/admin-view/vip/admin-add-vip";
 
