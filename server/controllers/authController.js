@@ -6,15 +6,12 @@ const {
   sendPasswordResetEmail,
   sendResetSuccessEmail,
   sendWelcomeEmail,
-
+  sendVerificationEmail,
 } = require("../brevo/email.brevo");
 const generateAuthToken = require("../utils/generateAuthToken");
 const { Users } = require("../models");
+const validator = require("validator");
 const { Op } = require("sequelize");
-const jwt = require("jsonwebtoken"); // missing in your file
-
-const ACCESS_SECRET = process.env.ACCESS_SECRET || "sangkiplaimportantkeyaccesssecretkey";
-const REFRESH_SECRET = process.env.REFRESH_SECRET || "sangkiplaimportantkeyrefreshsecretkey";
 
 const signup = async (req, res) => {
   try {
@@ -59,9 +56,13 @@ const signup = async (req, res) => {
       verified: false,
     });
 
+    // Send a verification email
+    // await sendVerificationEmail(user.email, user.verificationCode);
+
     res.status(201).json({
       success: true,
-      message: "User registered successfully.",
+      message:
+        "User registered successfully.",
       data: { userId: user.id, email: user.email }, // Optionally return user data except sensitive fields
     });
   } catch (error) {
@@ -73,93 +74,48 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await Users.findOne({ where: { email } });
 
-    if (!user) return res.status(401).json({ message: "Invalid email or password" });
-
-    const validPassword = await bcryptjs.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ message: "Invalid email or password" });
-
-    const { accessToken, refreshToken } = generateAuthToken(user);
-
-    const isProduction = process.env.NODE_ENV === "production";
-
-    // ✅ Set cookies with proper SameSite & secure for dev/prod
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "None" : "Lax",
-      maxAge: 15 * 60 * 1000, // 15 min
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "None" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      data: {
-        id: user.id,
-        email: user.email,
-        userType: user.userType,
-        phoneNumber: user.phoneNumber,
-        name: user.name,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-const refreshToken = async (req, res) => {
-  try {
-    const token = req.cookies.refreshToken;
-    if (!token) {
-      return res.status(401).json({ success: false, message: "Refresh token missing" });
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Please fill in email and password!" });
     }
 
-    const isProduction = process.env.NODE_ENV === "production";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Please use a valid email!" });
+    }
 
-    jwt.verify(token, REFRESH_SECRET, (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ success: false, message: "Invalid refresh token" });
-      }
+    const user = await Users.findOne({ where: { email } });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Email doesn't exist" });
+    }
+    // Check if the user is verified
+    // if (!user.verified) {
+    //   return res.status(400).json({
+    //     status: false,
+    //     message: "Account is not verified. Please verify your email first.",
+    //   });
+    // }
+    const match = await bcryptjs.compare(password, user.password);
+    if (!match) {
+      return res
+        .status(401)
+        .json({ status: false, message: "Wrong password." });
+    }
 
-      const payload = {
-        id: decoded.id,
-        email: decoded.email,
-        userType: decoded.userType,
-        name: decoded.name,
-        phoneNumber: decoded.phoneNumber,
-      };
+    const userToken = generateAuthToken(user);
 
-      const newAccessToken = jwt.sign(payload, ACCESS_SECRET, { expiresIn: "15m" });
-
-      // ✅ Reset accessToken cookie properly
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "None" : "Lax",
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.json({
-        success: true,
-        message: "Access token refreshed",
-        user: payload,
-        accessToken: newAccessToken,
-      });
-    });
+    res.status(200).json({ message: "Login success", token: userToken });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message })
   }
-};
-
-
+}
 
 const forgotPassword = async (req, res) => {
   try {
@@ -169,9 +125,7 @@ const forgotPassword = async (req, res) => {
     const user = await Users.findOne({ where: { email } });
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     // Generate a reset token using crypto
@@ -192,10 +146,7 @@ const forgotPassword = async (req, res) => {
 
     res
       .status(200)
-      .json({
-        success: true,
-        message: "Password reset link sent successfully",
-      });
+      .json({ success: true, message: "Password reset link sent successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -230,7 +181,7 @@ const verifyAccount = async (req, res) => {
       .status(200)
       .json({ status: true, message: "Account successfully verified" });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message })
   }
 };
 
@@ -279,34 +230,10 @@ const changePassword = async (req, res) => {
   }
 };
 
-
-
-const logout = async (req, res) => {
-  try {
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
-
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
-
-    return res.json({ success: true, message: "Logged out successfully" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 module.exports = {
   login,
   signup,
   verifyAccount,
   changePassword,
   forgotPassword,
-  logout,
-  refreshToken,
-};
+}

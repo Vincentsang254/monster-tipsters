@@ -2,50 +2,40 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
-import { loadUser, logoutUser, refreshToken } from "@/features/slices/authSlice";
+import { jwtDecode } from "jwt-decode";
+import { loadUser, logoutUser } from "@/features/slices/authSlice";
 import Loader from "./Loader";
 
 const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
   const location = useLocation();
   const dispatch = useDispatch();
-
-   // ✅ Pull directly from Redux state
-  const user = useSelector((state) => state.auth.user);
-  const userType = user?.userType;
-  const isAuthenticated = Boolean(user);
+  const userType = useSelector((state) => state.auth.userType);
+  const isAuthenticated = useSelector((state) => Boolean(state.auth.token));
   const [checkingToken, setCheckingToken] = useState(true);
 
-  console.log("user from check auth", user)
-
   useEffect(() => {
-    const verifyAuth = async () => {
+    const tokenFromStorage = localStorage.getItem("token");
+    if (tokenFromStorage) {
       try {
-        const resultAction = await dispatch(refreshToken());
-        
-
-        if (refreshToken.fulfilled.match(resultAction) && resultAction.payload?.user) {
-          
-          const { user, accessToken } = resultAction.payload;
-          dispatch(loadUser({ user, accessToken }));
-        } else {
+        const user = jwtDecode(tokenFromStorage);
+        if (user.exp * 1000 < Date.now()) {
           dispatch(logoutUser());
+        } else {
+          dispatch(loadUser(user));
         }
       } catch (error) {
-        console.error("Auth check failed:", error);
+        console.error("Token decoding failed:", error);
         dispatch(logoutUser());
-      } finally {
-        setCheckingToken(false);
       }
-    };
-
-    verifyAuth();
+    }
+    setCheckingToken(false);
   }, [dispatch]);
 
   if (checkingToken) {
     return <Loader />;
   }
 
-  // Define public paths
+  // Define public paths that don't require authentication
   const publicPaths = [
     "/auth/login",
     "/auth/register",
@@ -55,34 +45,47 @@ const CheckAuth = ({ children, requireAuth = false, requireAdmin = false }) => {
     "/auth/reset-password"
   ];
 
-  const isPublicPath = publicPaths.some(path => location.pathname.startsWith(path));
+  // Check if current path is public
+  const isPublicPath = publicPaths.some(path => 
+    location.pathname.startsWith(path)
+  );
+
+  // Check if current path is reset password
   const isResetPasswordPath = location.pathname.startsWith("/auth/reset-password");
 
-  if (isResetPasswordPath) return children;
-
-  if (isAuthenticated && isPublicPath) {
-    return userType === "admin"
-      ? <Navigate to="/admin/dashboard" replace />
-      : <Navigate to="/user/dashboard" replace />;
+  // 1. Handle reset password path specially (always allow)
+  if (isResetPasswordPath) {
+    return children;
   }
 
+  // 2. If user is authenticated and tries to access public path, redirect to dashboard
+  if (isAuthenticated && isPublicPath) {
+    return userType === "admin" ? 
+      <Navigate to="/admin/dashboard" replace /> : 
+      <Navigate to="/user/dashboard" replace />;
+  }
+
+  // 3. If auth is required but user isn't authenticated, redirect to login
   if (requireAuth && !isAuthenticated) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
+  // 4. If admin role is required but user isn't admin
   if (requireAuth && requireAdmin && userType !== "admin") {
     return <Navigate to="/unauth-page" replace />;
   }
 
+  // 5. Handle root path redirect
   if (location.pathname === "/") {
     if (isAuthenticated) {
-      return userType === "admin"
-        ? <Navigate to="/admin/dashboard" replace />
-        : <Navigate to="/user/dashboard" replace />;
+      return userType === "admin" ? 
+        <Navigate to="/admin/dashboard" replace /> : 
+        <Navigate to="/user/dashboard" replace />;
     }
     return <Navigate to="/auth/login" replace />;
   }
 
+  // 6. Default case - allow access
   return children;
 };
 
