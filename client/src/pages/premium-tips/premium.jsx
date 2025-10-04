@@ -50,7 +50,7 @@ const Premium = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
-    if (userType === "vip" || userType === "admin") {
+    if (userType === "vip") {
       dispatch(fetchCodes());
     }
   }, [dispatch, userType]);
