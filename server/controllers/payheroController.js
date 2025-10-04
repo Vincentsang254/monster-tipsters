@@ -185,7 +185,7 @@ const handleCallback = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Payment processed. VIP access granted.",
-      data: payment,
+      data: await Payments.findOne({ where: { reference, checkoutRequestId } }),
     });
   } catch (error) {
     console.error("Callback Error:", error.message);
@@ -210,8 +210,24 @@ const getPaymentHistory = async (req, res) => {
   }
 };
 
+const getPaymentStatus = async (req, res) => {
+  try {
+    const { checkoutId } = req.params;
+    const payment = await Payments.findOne({ where: { checkoutRequestId: checkoutId } });
+    if (!payment) {
+      return res.status(404).json({ success: false, message: "Payment not found" });
+    }
+    return res.status(200).json({ success: true, payment });
+  } catch (error) {
+    console.error("Status check error:", error.message);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 module.exports = {
   initiatePayheroSTKPush,
   handleCallback,
   getPaymentHistory,
+  getPaymentStatus
 };

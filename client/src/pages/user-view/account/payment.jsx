@@ -73,95 +73,82 @@ const Payment = () => {
     }
   ];
 
-  const handlePayment = async () => {
-    if (!phone || phone.length < 9) {
-      toast.error("Please enter a valid phone number", { position: "top-center" });
-      return;
-    }
+const handlePayment = async () => {
+  if (!phone || phone.length < 9) {
+    toast.error("Please enter a valid phone number", { position: "top-center" });
+    return;
+  }
 
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      toast.error("Please enter a valid amount", { position: "top-center" });
-      return;
-    }
+  if (!amount || isNaN(amount) || Number(amount) <= 0) {
+    toast.error("Please enter a valid amount", { position: "top-center" });
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const response = await axios.post(
-        `${url}/payment/stkpush`,
-        { 
-          phone: `254${phone}`, // Ensure proper format
-          amount, 
-          name,
-          id
-        },
-        setHeaders()
-      );
-      
-      console.log("Payment response:", response.data);
-      
-      if (response.data.success) {
-        toast.success(response.data.message || "Payment initiated successfully! Check your phone.", { 
-          position: "top-center",
-          autoClose: 5000
-        });
+  try {
+    const response = await axios.post(
+      `${url}/payment/stkpush`,
+      { phone: `254${phone}`, amount, id },
+      setHeaders()
+    );
 
-        // Enhanced payment success handling
-        if (response.data.status === "Success") {
-          // Force refresh user data to get updated premium status
-          setTimeout(() => {
-            dispatch(refreshToken());
-            
-            // Small delay to ensure token is refreshed, then load user data
-            setTimeout(() => {
-              dispatch(loadUser());
-              
-              // Redirect to VIP page after user data is refreshed
+    console.log("payment response", response.data.data);
+    console.log("payment message", response.data.message);
+
+    if (response.data.success) {
+      toast.success(response.data.message, { position: "top-center" });
+
+      const checkoutId = response.data.data.CheckoutRequestID;
+
+      // Start polling for final status
+      const interval = setInterval(async () => {
+        try {
+          const statusRes = await axios.get(
+            `${url}/payment/status/${checkoutId}`,
+            setHeaders()
+          );
+
+          if (statusRes.data.success) {
+            const payment = statusRes.data.payment;
+
+            if (payment.status === "SUCCESS") {
+              clearInterval(interval);
+
+              toast.success("Payment successful! VIP access granted.", {
+                position: "top-center",
+              });
+
+              // Refresh user session & redirect
+              dispatch(refreshToken());
               setTimeout(() => {
+                dispatch(loadUser());
                 navigate("/user/vip");
               }, 1000);
-            }, 500);
-          }, 2000);
-        } else {
-          // Standard success flow
-          setTimeout(() => {
-            navigate("/user/vip");
-          }, 3000);
+            } else if (payment.status === "FAILED") {
+              clearInterval(interval);
+              toast.error("Payment failed. Try again.", { position: "top-center" });
+            }
+          }
+        } catch (err) {
+          console.error("Polling error:", err);
         }
-      } else {
-        toast.error(response.data.message || "Payment failed. Please try again.", {
-          position: "top-center"
-        });
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      toast.error(
-        error.response?.data?.message || "Payment failed. Please try again.",
-        { position: "top-center" }
-      );
-    } finally {
-      setIsLoading(false);
+      }, 5000); // check every 5 sec
+    } else {
+      toast.error(response.data.message || "Payment failed. Please try again.", {
+        position: "top-center",
+      });
     }
-  };
+  } catch (error) {
+    console.error("Payment error:", error);
+    toast.error(error.response?.data?.message || "Payment failed. Please try again.", {
+      position: "top-center",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  // Enhanced payment status checker (optional - for more robust handling)
-  const checkPaymentStatus = async (paymentId) => {
-    try {
-      const statusResponse = await axios.get(
-        `${url}/payment/status/${paymentId}`,
-        setHeaders()
-      );
-      
-      if (statusResponse.data.status === "completed") {
-        // Payment completed, refresh user data
-        dispatch(refreshToken());
-        dispatch(loadUser());
-        navigate("/user/vip");
-      }
-    } catch (error) {
-      console.error("Status check error:", error);
-    }
-  };
 
   const handlePhoneChange = (e) => {
     const digits = e.target.value.replace(/\D/g, "").slice(0, 9);
