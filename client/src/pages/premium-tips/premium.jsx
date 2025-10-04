@@ -3,6 +3,7 @@
 /** @format */
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO } from "date-fns";
 import { 
@@ -38,6 +39,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Premium = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { list: codes, status, error } = useSelector((state) => state.codes);
   const { userType } = useSelector((state) => state.auth); // Assuming auth slice has userType
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,6 +75,11 @@ const Premium = () => {
     }
   };
 
+  // Handle payment navigation
+  const handlePayment = (amount) => {
+    navigate(`/payment/${amount}`);
+  };
+
   // Calculate stats
   const totalCodes = codes?.length || 0;
   const winCodes = codes?.filter(code => code?.results === "win").length || 0;
@@ -105,8 +112,9 @@ const Premium = () => {
   const pricingPlans = [
     {
       name: "Starter",
-      price: "$19",
-      period: "month",
+      price: "Kshs 499",
+      amount: "499",
+      period: "3 days",
       description: "Perfect for beginners",
       popular: false,
       features: [
@@ -121,8 +129,9 @@ const Premium = () => {
     },
     {
       name: "Pro",
-      price: "$49",
-      period: "month",
+      price: "Kshs 1499",
+      amount: "1499",
+      period: "7 days",
       description: "Most Popular Choice",
       popular: true,
       features: [
@@ -138,7 +147,8 @@ const Premium = () => {
     },
     {
       name: "Elite",
-      price: "$99",
+      price: "Kshs 2499",
+      amount: "2499",
       period: "month",
       description: "For Serious Bettors",
       popular: false,
@@ -314,6 +324,7 @@ const Premium = () => {
                     
                     <CardFooter>
                       <Button
+                        onClick={() => handlePayment(plan.amount)}
                         className={`w-full py-3 text-lg font-semibold bg-gradient-to-r ${plan.gradient} hover:shadow-xl transition-all duration-300`}
                         size="lg"
                       >
@@ -374,6 +385,7 @@ const Premium = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
+                    onClick={() => handlePayment("499")}
                     size="lg"
                     className="bg-white text-amber-600 hover:bg-gray-100 px-8 py-3 text-lg font-semibold"
                   >
