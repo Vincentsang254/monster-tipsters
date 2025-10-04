@@ -108,7 +108,7 @@ const Payment = () => {
         
         // Redirect to success page or back to premium
         setTimeout(() => {
-          navigate("/premium");
+          navigate("/user/vip");
         }, 3000);
       } else {
         toast.error(response.data.message || "Payment failed. Please try again.", {

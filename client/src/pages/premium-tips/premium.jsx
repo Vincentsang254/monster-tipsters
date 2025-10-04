@@ -166,8 +166,8 @@ const Premium = () => {
   const pricingPlans = [
     {
       name: "Starter",
-      price: "Kshs 499",
-      amount: "499",
+      price: "Kshs 1",//499
+      amount: "1",
       period: "3 days",
       description: "Perfect for beginners",
       popular: false,
@@ -183,8 +183,8 @@ const Premium = () => {
     },
     {
       name: "Pro",
-      price: "Kshs 1499",
-      amount: "1499",
+      price: "Kshs 2",//1499
+      amount: "2",
       period: "7 days",
       description: "Most Popular Choice",
       popular: true,
@@ -201,8 +201,8 @@ const Premium = () => {
     },
     {
       name: "Elite",
-      price: "Kshs 2499",
-      amount: "2499",
+      price: "Kshs 3",//2499
+      amount: "3",
       period: "month",
       description: "For Serious Bettors",
       popular: false,
