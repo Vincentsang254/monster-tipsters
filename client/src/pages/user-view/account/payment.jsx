@@ -2,21 +2,46 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { setHeaders, url } from "@/features/slices/api";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loadUser, refreshToken } from "@/features/slices/authSlice";
+import { motion } from "framer-motion";
+import { 
+  Shield, 
+  Lock, 
+  Smartphone, 
+  CreditCard, 
+  CheckCircle2,
+  ArrowLeft,
+  Zap,
+  Loader2
+} from "lucide-react";
 
 const Payment = () => {
   const { amount: paramAmount } = useParams();
+  const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAmountLocked, setIsAmountLocked] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState("mpesa");
   const dispatch = useDispatch();
   const { name, id } = useSelector((state) => state.auth);
+
+  // Map amount to plan name
+  const getPlanName = (amt) => {
+    const plans = {
+      "499": "Starter Plan (3 days)",
+      "1499": "Pro Plan (7 days)", 
+      "2499": "Elite Plan (1 month)"
+    };
+    return plans[amt] || "Premium Plan";
+  };
 
   // Initialize amount from params and lock it if present
   useEffect(() => {
@@ -29,6 +54,24 @@ const Payment = () => {
   useEffect(() => {
     dispatch(loadUser());
   }, [dispatch]);
+
+  const paymentMethods = [
+    {
+      id: "mpesa",
+      name: "M-Pesa",
+      icon: Smartphone,
+      description: "Pay via M-Pesa STK Push",
+      color: "from-green-500 to-green-600"
+    },
+    {
+      id: "card",
+      name: "Credit/Debit Card",
+      icon: CreditCard,
+      description: "Pay with Visa, Mastercard",
+      color: "from-blue-500 to-blue-600",
+      disabled: true
+    }
+  ];
 
   const handlePayment = async () => {
     if (!phone || phone.length < 9) {
@@ -47,206 +90,304 @@ const Payment = () => {
       const response = await axios.post(
         `${url}/payment/stkpush`,
         { 
-          phone, 
+          phone: `254${phone}`, // Ensure proper format
           amount, 
           name,
           id
         },
         setHeaders()
       );
-      console.log("pay response", response.data)
-      toast.success(response.data.message, { position: "top-center" });
+      
+      console.log("Payment response:", response.data);
+      
+      if (response.data.success) {
+        toast.success(response.data.message || "Payment initiated successfully! Check your phone.", { 
+          position: "top-center",
+          autoClose: 5000
+        });
+        
+        // Redirect to success page or back to premium
+        setTimeout(() => {
+          navigate("/premium");
+        }, 3000);
+      } else {
+        toast.error(response.data.message || "Payment failed. Please try again.", {
+          position: "top-center"
+        });
+      }
     } catch (error) {
+      console.error("Payment error:", error);
       toast.error(
         error.response?.data?.message || "Payment failed. Please try again.",
         { position: "top-center" }
       );
     } finally {
       setIsLoading(false);
-      dispatch(refreshToken())
+      dispatch(refreshToken());
     }
   };
 
   const handlePhoneChange = (e) => {
-    const digits = e.target.value.replace(/\D/g, "");
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 9);
     setPhone(digits);
   };
 
   const handleAmountChange = (e) => {
     if (!isAmountLocked) {
-      setAmount(e.target.value);
+      const value = e.target.value.replace(/\D/g, "");
+      setAmount(value);
     }
   };
 
+  const formatPhoneNumber = (phone) => {
+    if (phone.length === 9) {
+      return `+254 ${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`;
+    }
+    return phone;
+  };
+
   return (
-    <div className="max-w-md p-8 mx-auto my-10 bg-white rounded-lg shadow-lg dark:bg-gray-800">
-      <div className="flex flex-col items-center mb-6">
-        <div className="p-3 mb-4 bg-green-100 rounded-full dark:bg-green-900/30">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-8 h-8 text-green-600 dark:text-green-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-white">
-          M-Pesa Payment
-        </h1>
-        <p className="mt-2 text-center text-gray-600 dark:text-gray-300">
-          Complete your payment securely via M-Pesa
-        </p>
-        {isAmountLocked && (
-          <p className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-            Fixed amount: KES {amount}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        {/* Phone Number Input */}
-        <div>
-          <label
-            htmlFor="phone"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Phone Number
-            <span className="ml-1 text-red-500">*</span>
-          </label>
-          <div className="relative mt-1">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <span className="text-gray-500">+254</span>
-            </div>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              maxLength={10}
-              placeholder="712345678"
-              onChange={handlePhoneChange}
-              className={`pl-16 ${!phone ? "border-red-500" : "border-gray-300"}`}
-            />
-          </div>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Enter your M-Pesa registered number (e.g., 712345678)
-          </p>
-        </div>
-
-        {/* Amount Input */}
-        <div>
-          <label
-            htmlFor="amount"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Amount (KES)
-            <span className="ml-1 text-red-500">*</span>
-          </label>
-          <div className="relative mt-1">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <span className="text-gray-500">KES</span>
-            </div>
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              min="1"
-              placeholder={isAmountLocked ? "" : "Enter amount"}
-              disabled={isAmountLocked || isLoading}
-              onChange={handleAmountChange}
-              className={`pl-12 ${
-                !amount || Number(amount) <= 0
-                  ? "border-red-500"
-                  : "border-gray-300"
-              } ${isAmountLocked ? "bg-gray-100 dark:bg-gray-700" : ""}`}
-            />
-            {isAmountLocked && (
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 text-gray-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
-          {amount && Number(amount) > 0 && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {isAmountLocked 
-                ? "This amount cannot be changed" 
-                : "You'll receive an M-Pesa push notification"}
-            </p>
-          )}
-        </div>
-
-        {/* Pay Now Button */}
-        <Button
-          disabled={isLoading || !phone || !amount || Number(amount) <= 0}
-          className="w-full py-6 text-lg font-medium text-white transition-colors duration-300 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          onClick={handlePayment}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container px-4 py-8 mx-auto max-w-4xl">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
         >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <svg
-                className="w-5 h-5 mr-2 -ml-1 animate-spin"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              {isAmountLocked ? "Processing Payment..." : "Pay Now"}
-            </div>
-          ) : (
-            `Pay KES ${amount}`
-          )}
-        </Button>
-
-        {/* Security Info */}
-        <div className="flex items-start p-3 mt-4 text-sm bg-gray-100 rounded-lg dark:bg-gray-700/50">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="flex-shrink-0 w-5 h-5 mr-2 text-green-600 dark:text-green-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/premium")}
+            className="mb-6"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
-          <span className="text-gray-600 dark:text-gray-300">
-            Your payment is secure and encrypted. We don't store your payment
-            details.
-          </span>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Plans
+          </Button>
+          
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-amber-600 dark:from-white dark:to-amber-400 bg-clip-text text-transparent mb-4">
+            Complete Your Purchase
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400">
+            You're subscribing to: <strong>{getPlanName(amount)}</strong>
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Order Summary */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="border-0 shadow-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                  Order Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Plan:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {getPlanName(amount)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                  <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    KES {amount}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">What you'll get:</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                      Exclusive premium betting codes
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                      85%+ win rate guarantee
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                      Real-time code updates
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                      VIP community access
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mr-2" />
+                      Premium support
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <Shield className="w-5 h-5 text-green-500" />
+                  <span className="text-sm text-green-700 dark:text-green-400">
+                    Secure payment • 256-bit encryption
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Payment Section */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="border-0 shadow-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="w-6 h-6 text-blue-500" />
+                  Payment Details
+                </CardTitle>
+                <CardDescription>
+                  Enter your payment information securely
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Payment Method Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Payment Method
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {paymentMethods.map((method) => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        disabled={method.disabled}
+                        onClick={() => setSelectedMethod(method.id)}
+                        className={`p-3 border-2 rounded-lg text-left transition-all duration-200 ${
+                          selectedMethod === method.id
+                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                            : method.disabled
+                            ? 'border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-amber-300 cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg bg-gradient-to-r ${method.color}`}>
+                            <method.icon className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white text-sm">
+                              {method.name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {method.description}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Phone Number Input */}
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
+                    M-Pesa Phone Number
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <span className="text-gray-500">+254</span>
+                    </div>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      maxLength={9}
+                      placeholder="712345678"
+                      onChange={handlePhoneChange}
+                      className={`pl-16 ${
+                        !phone ? "border-red-300 focus:border-red-500" : "border-gray-300"
+                      }`}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  {phone && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      We'll send STK push to: {formatPhoneNumber(phone)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Amount Input */}
+                {!isAmountLocked && (
+                  <div>
+                    <label
+                      htmlFor="amount"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                      Amount (KES)
+                      <span className="ml-1 text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <span className="text-gray-500">KES</span>
+                      </div>
+                      <Input
+                        id="amount"
+                        type="text"
+                        value={amount}
+                        placeholder="Enter amount"
+                        onChange={handleAmountChange}
+                        className="pl-12"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Pay Button */}
+                <Button
+                  onClick={handlePayment}
+                  disabled={isLoading || !phone || phone.length < 9 || !amount || Number(amount) <= 0}
+                  className="w-full py-3 text-lg font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5 mr-2" />
+                      Pay KES {amount}
+                    </>
+                  )}
+                </Button>
+
+                {/* Security Info */}
+                <div className="text-center">
+                  <Badge 
+                    variant="outline" 
+                    className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800"
+                  >
+                    <Shield className="w-3 h-3 mr-1" />
+                    Secure & Encrypted
+                  </Badge>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Your payment information is secure and encrypted. We never store your sensitive data.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     </div>
