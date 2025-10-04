@@ -296,7 +296,7 @@ const Premium = () => {
 
   // Safe user type check
   const isClientUser = userType === "client";
-  const isPremiumUser = userType === "premium";
+  const isPremiumUser = userType === "vip";
 
   if (isClientUser) {
     return (
