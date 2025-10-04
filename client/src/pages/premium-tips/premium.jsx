@@ -426,7 +426,7 @@ const Premium = () => {
                     
                     <CardFooter>
                       <Button
-                        onClick={() => handlePayment(plan?.amount || "499")}
+                        onClick={() => handlePayment(plan?.amount)}
                         className={`w-full py-3 text-lg font-semibold bg-gradient-to-r ${plan?.gradient || "from-gray-500 to-gray-600"} hover:shadow-xl transition-all duration-300`}
                         size="lg"
                       >
