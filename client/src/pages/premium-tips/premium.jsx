@@ -119,13 +119,13 @@ const Premium = () => {
     }
   };
 
-  // Handle payment navigation
+  // Handle payment navigation - UPDATED PATH
   const handlePayment = (amount) => {
     if (!amount || isNaN(amount)) {
       toast.error("Invalid payment amount", { position: "top-center" });
       return;
     }
-    navigate(`/payment/${amount}`);
+    navigate(`/user/payment/${amount}`);
   };
 
   // Calculate stats with null safety
