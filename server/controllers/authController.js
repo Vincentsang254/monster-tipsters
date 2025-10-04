@@ -94,13 +94,7 @@ const login = async (req, res) => {
         .status(404)
         .json({ status: false, message: "Email doesn't exist" });
     }
-    // Check if the user is verified
-    // if (!user.verified) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     message: "Account is not verified. Please verify your email first.",
-    //   });
-    // }
+
     const match = await bcryptjs.compare(password, user.password);
     if (!match) {
       return res

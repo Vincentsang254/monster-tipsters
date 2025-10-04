@@ -17,9 +17,9 @@ const encodedCredentials = Buffer.from(
 ).toString("base64");
 
 const PAYMENT_TIERS = {
-  499: 3, //499
-  1499: 7, //1499
-  2499: 30, //2499
+  1: 3, //499
+  2: 7, //1499
+  3: 30, //2499
 };
 
 // ✅ Cron job: Reset expired VIP users to 'client'

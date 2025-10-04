@@ -77,7 +77,7 @@ export const refreshToken = createAsyncThunk(
       const response = await axios.get(`${url}/auth/refresh-token`, {
         headers: { "x-auth-token": localStorage.getItem("token") },
       });
-      console.log("response from refresh token",response.data);
+      console.log("response from refresh token",response.data.data);
       return response.data.data; // latest user info
     } catch (error) {
       toast.error(error.response?.data?.message || "Session expired", {

@@ -7,7 +7,7 @@ import axios from "axios";
 import { setHeaders, url } from "@/features/slices/api";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { loadUser } from "@/features/slices/authSlice";
+import { loadUser, refreshToken } from "@/features/slices/authSlice";
 
 const Payment = () => {
   const { amount: paramAmount } = useParams();
@@ -63,6 +63,7 @@ const Payment = () => {
       );
     } finally {
       setIsLoading(false);
+      dispatch(refreshToken())
     }
   };
 
